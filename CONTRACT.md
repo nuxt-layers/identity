@@ -47,17 +47,17 @@ export default defineNitroPlugin(() => {
 })
 ```
 
-The host must construct `runtimePool` securely before this call. To enable authenticated administration, supply `accessDecision`, `approvalPolicy`, `subjectResolver` and `eventPublisher` in the same `composeIdentity({ database, accessDecision, approvalPolicy, subjectResolver, eventPublisher, policy?, clock? })` call. These are the **current** Identity-specific port shapes; the future ADR-0012 shared caller and decision shapes are not yet adapted. Without an access decision every privileged decision is denied; without an approval policy no approver qualifies; without a subject resolver HTTP requests are anonymous; without a publisher the outbox relay rejects without acknowledging delivery. Never use these refusal-only defaults as a working production IAM integration.
+The host must construct `runtimePool` securely before this call (for example, a `pg.Pool` using a server-only `IDENTITY_DATABASE_URL` environment variable). The consuming host must install its own PostgreSQL driver, configure a least-privileged runtime role and apply migrations separately with a privileged operator connection. To enable authenticated administration, supply `accessDecision`, `approvalPolicy`, `subjectResolver` and `eventPublisher` in the same `composeIdentity({ database, accessDecision, approvalPolicy, subjectResolver, eventPublisher, policy?, clock? })` call. These are the **current** Identity-specific port shapes; the future ADR-0012 shared caller and decision shapes are not yet adapted. Without an access decision every privileged decision is denied; without an approval policy no approver qualifies; without a subject resolver HTTP requests are anonymous; without a publisher the outbox relay rejects without acknowledging delivery. Never use these refusal-only defaults as a working production IAM integration.
 
 For compatibility, the individual `provideIdentity*` server utilities remain available. Their current structural shapes (with public TypeScript types from `@nuxt-layers/identity/contracts`) are:
 
 | Function | Expected structural shape | Mandatory |
 |---|---|---|
-| `provideIdentityDatabase({ dialect: 'postgres', pool, schema? })` | `pool.query(text, values?)`, `pool.connect()`, `pool.end()` as a `pg`-compatible pool | Yes |
-| `provideIdentityAccessDecision({ decide })` | `decide({ subject, permission, groupId, correlationId }) → Promise< { allowed: true } \| { allowed: false, reason: 'not-permitted' } \| { allowed: false, reason: 'insufficient-assurance', requirement } >` | Yes |
-| `provideIdentityApprovalPolicy({ riskOf, qualifies, countQualifying })` | `riskOf(permission) → riskLevel \| null`; `qualifies({ approverId, permission, groupId }) → boolean`; `countQualifying({ permission, groupId, excludingId, limit }) → number`, all asynchronous | Yes |
-| `provideIdentityEventPublisher({ publish })` | `publish(event) → Promise<void>`; must reject on unsuccessful delivery | Yes |
-| `provideIdentitySubjectResolver({ resolve })` | `resolve(event)` supplies Authentication's principal or null; required for HTTP use | Required for endpoints |
+| `provideIdentityDatabase({ dialect: 'postgres', pool, schema? })` | `pool.query(text, values?)`, `pool.connect()`, `pool.end()` as a `pg`-compatible pool | Yes; pass in `composeIdentity.database` |
+| `provideIdentityAccessDecision({ decide })` | `decide({ subject, permission, groupId, correlationId }) → Promise< { allowed: true } \| { allowed: false, reason: 'not-permitted' } \| { allowed: false, reason: 'insufficient-assurance', requirement } >` | For operational permissions; otherwise deny-all default |
+| `provideIdentityApprovalPolicy({ riskOf, qualifies, countQualifying })` | `riskOf(permission) → riskLevel \| null`; `qualifies({ approverId, permission, groupId }) → boolean`; `countQualifying({ permission, groupId, excludingId, limit }) → number`, all asynchronous | For operational approvals; otherwise no-approval default |
+| `provideIdentityEventPublisher({ publish })` | `publish(event) → Promise<void>`; must reject on unsuccessful delivery | For successful outbox relays; otherwise delivery refused |
+| `provideIdentitySubjectResolver({ resolve })` | `resolve(event)` supplies Authentication's principal or null; required for HTTP use | For authenticated endpoints; otherwise anonymous default |
 | `provideIdentityClock({ now })` | `now() → Date`; defaults to system clock, invalid results fail closed | No |
 | `provideIdentityPolicy(input)` | Validated `IdentityPolicyInput`; defaults to secure policy | No |
 
@@ -67,7 +67,7 @@ These are the **current implemented** ports, not ADR-0012's final simplified `re
 
 ## Client and server functions
 
-Server composition functions are available through Nuxt/Nitro's public server utilities: `provideIdentityDatabase`, `provideIdentityAccessDecision`, `provideIdentityApprovalPolicy`, `provideIdentityEventPublisher`, `provideIdentitySubjectResolver`, `provideIdentityClock`, `provideIdentityPolicy`. Their counterparts `useIdentity*` read the effective ports and refuse absent mandatory providers.
+Server composition functions are available through Nuxt/Nitro's public server utilities: `composeIdentity`, `provideIdentityDatabase`, `provideIdentityAccessDecision`, `provideIdentityApprovalPolicy`, `provideIdentityEventPublisher`, `provideIdentitySubjectResolver`, `provideIdentityClock`, `provideIdentityPolicy`. Their counterparts `useIdentity*` read the effective ports and refuse absent mandatory providers.
 
 The supported server functions and entry points are:
 
