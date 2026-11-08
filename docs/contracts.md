@@ -541,7 +541,7 @@ A platform operator's `identity.suspend` reaches a service identity too. Deletin
 
 ## 17. Versioning
 
-This is contract version 1. During active development the package uses `0.0.0` metadata; formal release and compatibility guarantees are suspended under ADR-0008. A change that breaks the contract (a removed or narrowed type, function, endpoint, event or port, or a stricter rule a host must act on) needs a new contract version and a major release; an addition is a minor release; a fix is a patch. Each release is listed in `CHANGELOG.md`. Reserved for later versions: further `pausing` values (`notice`, `approval`), identity-provider group-claim mapping (improvement register item 18), and the tenancy module's extraction.
+This is contract version 1. During active development the package uses `0.0.0` metadata; formal release and compatibility guarantees are suspended under ADR-0008. A change that breaks the contract (a removed or narrowed type, function, endpoint, event or port, or a stricter rule a host must act on) requires a documented contract-version change, updated consumer integration and acceptance checks. Release-version semantics resume only under a future approved release policy. Historical releases remain in `CHANGELOG.md`. Reserved for later versions: further `pausing` values (`notice`, `approval`), identity-provider group-claim mapping (improvement register item 18), and the tenancy module's extraction.
 
 Changes before 1.0:
 
