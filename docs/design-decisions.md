@@ -1,7 +1,9 @@
+> Historical design record. Superseded dependency pins and release decisions below are evidence, not current integration instructions. Current governing references are in [`RESOURCES.md`](../RESOURCES.md).
+
 # Identity Design Round: Decisions
 
 **Date:** 2026-10-09  
-**Inputs:** the questions decided before this round in iam-integration's [roadmap](https://github.com/nuxt4-layers/iam-integration/blob/d46b16580a711b840edb1eef5db51b2fe3d0421f/docs/roadmap.md) and [improvement register](https://github.com/nuxt4-layers/iam-integration/blob/d46b16580a711b840edb1eef5db51b2fe3d0421f/docs/improvement-register.md) (questions 1 to 4, D1 to D3), and the questions below, decided by the project owner in this round. The amendments these need in iam-integration are listed in §10 and made in [nuxt4-layers/iam-integration#6](https://github.com/nuxt4-layers/iam-integration/pull/6), merged on 2026-10-09; this repository's links are pinned to that merge.
+**Inputs:** the questions decided before this round in iam-integration's [roadmap](https://github.com/nuxt-layers/iam-integration/blob/d46b16580a711b840edb1eef5db51b2fe3d0421f/docs/roadmap.md) and [improvement register](https://github.com/nuxt-layers/iam-integration/blob/d46b16580a711b840edb1eef5db51b2fe3d0421f/docs/improvement-register.md) (questions 1 to 4, D1 to D3), and the questions below, decided by the project owner in this round. The amendments these need in iam-integration are listed in §10 and made in [nuxt-layers/iam-integration#6](https://github.com/nuxt-layers/iam-integration/pull/6), merged on 2026-10-09; this repository's links are pinned to that merge.
 
 ## 1. Better Auth accepts an identifier issued by Identity (roadmap decision 1)
 

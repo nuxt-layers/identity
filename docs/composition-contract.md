@@ -2,15 +2,15 @@
 
 ## 1. Purpose
 
-How a host Nuxt application composes the identity capability. The host is the composition root. Identity is a bounded foundation capability in the IAM suite ([ADR-0005](https://github.com/nuxt4-layers/platform-architecture/blob/93f3d6fb144b72d61cfb172b6a50eb6c5af9f489/docs/decisions/ADR-0005-iam-suite.md)).
+How a host Nuxt application composes the identity capability. The host is the composition root. Identity is a bounded foundation capability in the IAM suite (ADR-0005 (governing architecture; see `RESOURCES.md`)).
 
 ## 2. Package composition
 
 Install through the package manager and compose the package root with Nuxt `extends`:
 
-- during early development, use a Git-backed dependency **pinned to a tag or commit SHA**. The package runs no install-time scripts, so only its runtime dependency (`zod`) is installed;
+- during early development, use the latest accepted `master` with a Git-backed dependency. The package runs no install-time scripts, so only its runtime dependency (`zod`) is installed;
 - commit the lockfile and install with `--frozen-lockfile` in CI;
-- never follow a mutable default branch in production.
+- formal production releases are subject to a future release policy (ADR-0008).
 
 Compose Identity as a **peer** of Authentication, Profile and Authorisation. It does not extend, and is not extended by, any of them.
 
@@ -30,13 +30,13 @@ Host outbox relay ◄── identity outbox ── IdentityEventPublisher ◄─
         └──► Authentication, Profile, Authorisation, notifications, audit
 ```
 
-Identity has **no package dependency** on any other member, database vendor SDK or UI. Its manifest declares Authorisation and Authentication as required **capabilities**: the host connects their contracts to Identity's. Reference adapters for these connections will live in `nuxt4-layers/iam-integration`.
+Identity has **no package dependency** on any other member, database vendor SDK or UI. Its manifest declares Authorisation and Authentication as required **capabilities**: the host connects their contracts to Identity's. Reference adapters for these connections will live in `nuxt-layers/iam-integration`.
 
 ## 4. Host responsibilities
 
 The host application:
 
-- selects a compatible version and pins it;
+- selects the latest accepted development `master` and records its resolution in the lockfile;
 - creates two PostgreSQL roles: a **migration role** that owns the `identity` schema, and a **runtime role** that owns nothing, is not a superuser and does not have `BYPASSRLS`;
 - applies migrations at deployment with `migrateIdentityDatabase({ pool: migrationPool, runtimeRole })`, which refuses a runtime role that could bypass row-level security;
 - supplies the **runtime** pool through `provideIdentityDatabase` (required);
@@ -49,9 +49,9 @@ The host application:
 - supplies `provideIdentityApprovalPolicy` (required), adapting Authorisation's catalogue risk levels and the principals who hold a permission in a group. Every read is `strong`;
 - supplies `provideIdentityEventPublisher` (required), the publishing end of its outbox relay;
 - supplies `provideIdentitySubjectResolver` for the `/api/identity/*` endpoints, adapting Authentication's `getAuthenticatedPrincipal(event)`; without it every endpoint answers `unavailable`;
-- optionally supplies `provideIdentityClock`, the suite's one clock ([iam-integration's architecture §7](https://github.com/nuxt4-layers/iam-integration/blob/e986245d746507bf7093ca203e346ab1b571e3a8/docs/architecture.md#7-time)), the same one it gives every other member; a clock that can be moved only in tests;
+- optionally supplies `provideIdentityClock`, the suite's one clock (iam-integration's architecture §7 (see `RESOURCES.md`)), the same one it gives every other member; a clock that can be moved only in tests;
 - sets `NUXT_IDENTITY_BASE_URL` to its public origin; without it every state-changing endpoint is refused;
-- for the default pages: imports Theme Manager's `presentation.css` and then `@nuxt4-layers/identity/tailwind.css` into its Tailwind stylesheet, sets `identity.routes.signIn` to its sign-in page, and overrides `IdentityPersonName` with a component that asks Profile for names; or turns the pages off (`identity: { pages: { enabled: false } }`);
+- for the default pages: imports Theme Manager's `presentation.css` and then `@nuxt-layers/identity/tailwind.css` into its Tailwind stylesheet, sets `identity.routes.signIn` to its sign-in page, and overrides `IdentityPersonName` with a component that asks Profile for names; or turns the pages off (`identity: { pages: { enabled: false } }`);
 - builds its own invitation endpoint, which calls `getIdentityJoining().invite` and hands the token and the address to its delivery, so that the address never reaches Identity;
 - adds `IDENTITY_PERMISSIONS` to Authorisation's catalogue;
 - optionally supplies policy overrides through `provideIdentityPolicy`, within bounds;
@@ -59,13 +59,13 @@ The host application:
   - `IdentityProvisioning` to Authentication's provisioning port, called from the engine's user-creation hook (`reserve`) and after verification (`confirm`);
   - `IdentityDirectory` to Authorisation's `AuthorisationDirectory`, mapping an effective status of `paused` to `suspended` while Authorisation is on contract 2;
   - `IdentityDisclosureContextPort` to Profile's disclosure-context port;
-- runs the directory conformance suite (`@nuxt4-layers/identity/conformance`) against every directory adapter it supplies, including any cache;
+- runs the directory conformance suite (`@nuxt-layers/identity/conformance`) against every directory adapter it supplies, including any cache;
 - integration-tests the composed system, including negative tests for tenant isolation and for leaving a group.
 
 Example Nitro plugin:
 
 ```ts
-import { IDENTITY_PERMISSIONS } from '@nuxt4-layers/identity/contracts'
+import { IDENTITY_PERMISSIONS } from '@nuxt-layers/identity/contracts'
 
 export default defineNitroPlugin(() => {
   provideIdentityDatabase({ dialect: 'postgres', pool })
@@ -90,7 +90,7 @@ The identity layer:
 
 ## 6. Persistence and store inventory
 
-Identity follows ADR-0002 and the [Data Store Security Standard v0.1](https://github.com/nuxt4-layers/platform-architecture/blob/93f3d6fb144b72d61cfb172b6a50eb6c5af9f489/docs/standards/data-store-security-v01.md) §1:
+Identity follows ADR-0002 and the Data Store Security Standard v0.1 (governing architecture; see `RESOURCES.md`) §1:
 
 | Field | Value |
 |---|---|
@@ -129,4 +129,4 @@ Identity follows ADR-0002 and the [Data Store Security Standard v0.1](https://gi
 
 ## 8. Composed-system verification
 
-A consuming application must test its own combination of the pinned Identity version, its adapters to and from Authentication, Authorisation and Profile, its database and its outbox relay. The layer's tests establish its contract; they cannot establish the correctness of a host's adapters. The conformance suite covers the directory adapter; iam-integration's composition tests (its roadmap phase 4) will cover the processes end to end.
+A consuming application must test its own combination of the current Identity `master`, its adapters to and from Authentication, Authorisation and Profile, its database and its outbox relay. The layer's tests establish its contract; they cannot establish the correctness of a host's adapters. The conformance suite covers the directory adapter; iam-integration's composition tests (its roadmap phase 4) will cover the processes end to end.

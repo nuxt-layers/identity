@@ -1,12 +1,12 @@
 # Security policy
 
-`@nuxt4-layers/identity` holds the membership graph that every access
+`@nuxt-layers/identity` holds the membership graph that every access
 decision reads, so we treat security reports as our highest priority.
 
 ## Reporting a vulnerability
 
 **Do not open a public issue, discussion or pull request.** Report privately
-through GitHub: [Security → Report a vulnerability](https://github.com/nuxt4-layers/identity/security/advisories/new).
+through GitHub: the repository's **Security → Report a vulnerability** feature.
 
 Please include the affected version or commit, the impact, and the steps or a
 proof of concept to reproduce it. Never include real users' credentials or
@@ -18,7 +18,7 @@ unless you ask us not to.
 
 ## Supported versions
 
-Before 1.0, only the latest release on `master` receives fixes.
+During active development, security fixes target the latest accepted `master`. Formal releases are suspended under ADR-0008.
 
 ## Scope
 
