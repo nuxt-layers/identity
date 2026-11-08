@@ -17,3 +17,5 @@ overrides:
   # accepts ^1.1.0; 2.x keeps the same API (vulnerabilityCheck) and only adds an
   # export. Remove once devtools depends on simple-git 4.
   '@simple-git/argv-parser': ^2.0.1
+allowBuilds:
+  esbuild: true
