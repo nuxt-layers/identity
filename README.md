@@ -37,3 +37,8 @@ Run `corepack pnpm install --frozen-lockfile` after dependency resolutions have 
 ## Licence
 
 MIT
+
+
+## Minimal consumer and scheduled work
+
+The independent Nuxt consumer is in `examples/minimal-host`. CI builds and smoke-tests it, and `scripts/check_minimal_host.py` measures the ADR-0012 composition budget. The server utility `getIdentityTasks()` returns Identity-owned maintenance and outbox descriptors for a host scheduler. See `CONTRACT.md` for the refusal-only default and production IAM requirements.

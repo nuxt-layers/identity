@@ -142,6 +142,77 @@ export function useIdentityPolicy(): IdentityPolicy {
   return policy
 }
 
+
+/**
+ * One-call, compatibility-preserving composition entry point.
+ *
+ * ADR-0012's shared IAM caller/decision shapes are not yet compatible with
+ * the current Identity contract. Do not silently reinterpret those shapes.
+ * Missing security ports use refusal-only defaults; event publication throws
+ * until a real publisher is supplied, so the outbox cannot be acknowledged
+ * without delivery.
+ */
+export interface IdentityCompositionInput {
+  database: IdentityDatabase
+  accessDecision?: IdentityAccessDecision
+  approvalPolicy?: IdentityApprovalPolicy
+  eventPublisher?: IdentityEventPublisher
+  subjectResolver?: IdentitySubjectResolver
+  policy?: IdentityPolicyInput
+  clock?: IdentityClock
+}
+
+const denyAccess: IdentityAccessDecision = {
+  async decide() { return { allowed: false, reason: 'not-permitted' } },
+}
+
+const denyApproval: IdentityApprovalPolicy = {
+  async riskOf() { return null },
+  async qualifies() { return false },
+  async countQualifying() { return 0 },
+}
+
+const refuseDelivery: IdentityEventPublisher = {
+  async publish() { throw new IdentityError('unavailable', 'identity event publisher is not configured') },
+}
+
+const anonymousCaller: IdentitySubjectResolver = {
+  async resolve() { return null },
+}
+
+/**
+ * Configure Identity in one host plugin call. A production integration
+ * supplies its own IAM ports and event publisher; the defaults are deliberately
+ * non-operational for privileged actions.
+ */
+export function composeIdentity(input: IdentityCompositionInput): void {
+  if (!input || !input.database) throw new TypeError('composeIdentity requires a PostgreSQL database.')
+  // Validate supplied shapes before installing any port to avoid partial
+  // registration on malformed input.
+  const { database: next, accessDecision, approvalPolicy, eventPublisher, subjectResolver, policy: hostPolicy, clock: hostClock } = input
+  if (next.dialect !== 'postgres' || typeof next.pool?.query !== 'function' ||
+      !/^[a-z_][a-z0-9_]{0,62}$/.test(next.schema ?? 'identity')) {
+    throw new TypeError('composeIdentity requires a valid PostgreSQL pool and schema.')
+  }
+  if (accessDecision && typeof accessDecision.decide !== 'function') throw new TypeError('Invalid Identity access decision.')
+  if (approvalPolicy && (typeof approvalPolicy.riskOf !== 'function' || typeof approvalPolicy.qualifies !== 'function' || typeof approvalPolicy.countQualifying !== 'function')) {
+    throw new TypeError('Invalid Identity approval policy.')
+  }
+  if (eventPublisher && typeof eventPublisher.publish !== 'function') throw new TypeError('Invalid Identity event publisher.')
+  if (subjectResolver && typeof subjectResolver.resolve !== 'function') throw new TypeError('Invalid Identity subject resolver.')
+  if (hostClock && typeof hostClock.now !== 'function') throw new TypeError('Invalid Identity clock.')
+  // Policy validation can throw; perform it before changing the registry.
+  const validatedPolicy = hostPolicy ? resolveIdentityPolicy(hostPolicy) : null
+
+  provideIdentityDatabase(next)
+  provideIdentityAccessDecision(accessDecision ?? denyAccess)
+  provideIdentityApprovalPolicy(approvalPolicy ?? denyApproval)
+  provideIdentityEventPublisher(eventPublisher ?? refuseDelivery)
+  provideIdentitySubjectResolver(subjectResolver ?? anonymousCaller)
+  if (validatedPolicy) policy = validatedPolicy
+  if (hostClock) provideIdentityClock(hostClock)
+}
+
 /** Test helper: removes every supplied port. */
 export function clearIdentityComposition(): void {
   database = null
