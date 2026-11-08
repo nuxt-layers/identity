@@ -6,12 +6,12 @@ A member of the IAM suite (ADR-0005). Governed by `nuxt-layers/architecture-rule
 
 ## Commands
 - `pnpm install`, then `pnpm dev:prepare` for Nuxt types. Never add a `prepare`/`postinstall` script: Git installs would then pull devDependencies into hosts
-- `pnpm check` = `nuxt typecheck` + `vitest run`; run it after every code change
+- `pnpm check` = `nuxt typecheck` + `vitest run`; run through CI or when explicitly authorised
 - `pnpm build:playground` proves the layer composes in a host
 - Single test file: `pnpm vitest run tests/<name>.test.ts`
 - Database suites (`tests/database/`) need `IDENTITY_TEST_DATABASE_URL` (admin URL of a local, disposable PostgreSQL 16). They skip locally without it and fail in CI. Each creates its own database and a runtime role
 - Never edit a released migration in `server/database/migrations.ts`; add a new one
-- `python3 scripts/check_markdown.py` checks headings, local links and pinned cross-repository links; run it after every documentation change
+- `python3 scripts/check_markdown.py` checks headings, local links and architecture reference placement; run through CI or when authorised
 - Browser tests: `pnpm test:e2e` (builds the playground, then Playwright with axe). Needs `IDENTITY_TEST_DATABASE_URL`; locally set `PLAYWRIGHT_CHROMIUM_EXECUTABLE` if Playwright's own browser is not installed
 - Theme Manager follows `github:nuxt-layers/theme-manager#master`; keep lockfile resolutions reproducible and use HTTPS in CI.
 
