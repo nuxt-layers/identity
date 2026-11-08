@@ -1,8 +1,8 @@
-# @nuxt4-layers/identity — notes for Claude
+# @nuxt-layers/identity — notes for Claude
 
 ## What this is
 Nuxt 4 foundation layer for identity (which identity is this, and what is it a member of, in which state?).
-A member of the IAM suite (ADR-0005). Governed by `nuxt4-layers/platform-architecture`; persistence follows ADR-0002 and ADR-0006. Cross-member processes live in `nuxt4-layers/iam-integration`. British spelling everywhere, including code and the manifest.
+A member of the IAM suite (ADR-0005). Governed by `nuxt-layers/architecture-rules`; persistence follows ADR-0002 and ADR-0006. Cross-member processes live in `nuxt-layers/iam-integration`. British spelling everywhere, including code and the manifest.
 
 ## Commands
 - `pnpm install`, then `pnpm dev:prepare` for Nuxt types. Never add a `prepare`/`postinstall` script: Git installs would then pull devDependencies into hosts
@@ -13,11 +13,11 @@ A member of the IAM suite (ADR-0005). Governed by `nuxt4-layers/platform-archite
 - Never edit a released migration in `server/database/migrations.ts`; add a new one
 - `python3 scripts/check_markdown.py` checks headings, local links and pinned cross-repository links; run it after every documentation change
 - Browser tests: `pnpm test:e2e` (builds the playground, then Playwright with axe). Needs `IDENTITY_TEST_DATABASE_URL`; locally set `PLAYWRIGHT_CHROMIUM_EXECUTABLE` if Playwright's own browser is not installed
-- Theme Manager is pinned as `git+https://github.com/nuxt4-layers/theme-manager.git#<sha>`; the lockfile must not record `git@github.com` (CI has no SSH key)
+- Theme Manager follows `github:nuxt-layers/theme-manager#master`; keep lockfile resolutions reproducible and use HTTPS in CI.
 
 ## Rules
 - **No personal data.** Identity holds opaque identifiers, states, dates, codes, and group and service-identity names only. Never names, email addresses, phone numbers, free text about a person, or a hash of any of them. Personal data is Profile's; sign-in identifiers are Authentication's. `tests/personal-data.test.ts` must stay green: every record, event and port-answer schema is a strict object, and every string in it is an identifier, a code, a timestamp, a digest or a safe group or service-identity name.
-- Contract (`contracts/`, `shared/`, `conformance/`) imports only zod. No Nuxt, Vue, h3, server code, drivers or other `@nuxt4-layers/*` packages. Enforced by `tests/contracts.test.ts`.
+- Contract (`contracts/`, `shared/`, `conformance/`) imports only zod. No Nuxt, Vue, h3, server code, drivers or other `@nuxt-layers/*` packages. Enforced by `tests/contracts.test.ts`.
 - Public surface: package root, `./contracts`, `./conformance`, `./capability`, the `provide*` server functions, and `migrateIdentityDatabase`, `getIdentityProvisioning`, `getIdentityDirectory`, `getIdentityAccessGovernance`, `getIdentityDisclosureContext`, `getIdentityGovernance`, `getIdentityApprovals`, `getIdentityJoining`, `getIdentityLifecycle`, `getIdentityBreakGlass`, `recordIdentityCredentialRecovery`, `getIdentityQueries`, `exportIdentityData`, `getIdentityScimStructure`, `identityLegalHoldCovers`, `recordIdentityDisposal`, `getIdentityDisposal`, `exportIdentityTenantData`, `getIdentityServiceIdentities`, `relayIdentityOutbox`, `runIdentityMaintenance`, `provisionIdentityTenant`, `bootstrapIdentityRootGroup`, `provisionIdentityBreakGlass`, the `/api/identity/*` endpoints, `useIdentity()`, `./presentation`, `./tailwind.css`, the default pages, the `Identity*` components and `useIdentityText()`, `useIdentityAction()`, `useIdentityRoutes()`. `server/internal` and `server/database` are private.
 - Members never import one another. Authentication, Authorisation and Profile reach Identity through ports the host supplies; Identity reaches Authorisation through its access-decision and approval-policy ports.
 - Follow the Group Model Definition: personal group atomic with the identity, single parent, no cycles, no implicit inheritance, membership-derived revocation.
@@ -36,6 +36,6 @@ A member of the IAM suite (ADR-0005). Governed by `nuxt4-layers/platform-archite
 - Defaults are secure; loosening a safety period or limit needs a documented risk treatment.
 - Safety periods (contract §21) change only through a `critical`, approved `group.change-safety-periods`: the platform group in either direction within the hard bounds, root groups and groups only safer, a less safe value waiting out the old one. The runtime role never writes `group.safety_periods`, and the database checks every recorded change against the periods in force. Keep `tests/database/safety-periods.test.ts` proving it.
 - End of life (contract §22): deleting a group, shutting a tenant and placing or releasing a legal hold happen only as approved `critical` changes, checked again on applying; a deleted group confers nothing at once; a held subject's disposal waits in the database until no hold covers it; nothing is created in a tenant that is not active. Keep `tests/database/end-of-life.test.ts` proving it.
-- Keep `docs/contracts.md`, `docs/threat-model.md` (control register) and `docs/roadmap.md` in step with code. Link to other `nuxt4-layers` documents pinned to a commit.
+- Keep `docs/contracts.md`, `docs/threat-model.md` (control register) and `docs/roadmap.md` in step with code. List verified external architecture references exclusively in `RESOURCES.md`.
 - Platform-agnostic: the layer and its tests run alike on Windows, macOS and Linux. Tests that compare file paths with import specifiers or routes pass them through `toPosix` (`tests/support/paths.ts`) first: Node's path functions answer with `\` on Windows.
 - Package manager: pnpm. Commit `pnpm-lock.yaml`.
