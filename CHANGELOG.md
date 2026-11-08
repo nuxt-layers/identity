@@ -1,8 +1,10 @@
 # Changelog
 
-All notable changes to `@nuxt4-layers/identity`. The package follows [semantic versioning](https://semver.org/), and contract version 1 is frozen for 1.x.
+All notable changes to `@nuxt-layers/identity`. Historical release records are retained; formal releases are currently suspended under ADR-0008.
 
 ## Unreleased
+
+- Migrate active package and repository references to `nuxt-layers`; follow development dependencies from `master` and align documentation with the current architecture.
 
 - The layer's own tests pass on Windows as well as on Linux and macOS: the paths they compare with import specifiers and routes are written with `/` on every platform (`tests/support/paths.ts`). On Windows the contract, architecture and endpoint tests used to fail, or check nothing.
 

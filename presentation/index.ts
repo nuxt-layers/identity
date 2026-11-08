@@ -1,6 +1,6 @@
 /**
- * Public presentation surface of `@nuxt4-layers/identity`
- * (`@nuxt4-layers/identity/presentation`).
+ * Public presentation surface of `@nuxt-layers/identity`
+ * (`@nuxt-layers/identity/presentation`).
  *
  * The default pages and components depend on the contract and the client
  * API (`useIdentity()`) only, and decide nothing: every action is decided
