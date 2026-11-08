@@ -2,7 +2,7 @@
 
 ## 1. Purpose
 
-How a host Nuxt application composes the identity capability. The host is the composition root. Identity is a bounded foundation capability in the IAM suite (ADR-0005 (governing architecture; see `RESOURCES.md`)).
+Historical suite-composition detail; the current standalone consumer interface is the root `CONTRACT.md`. The host is the composition root. Identity is a bounded foundation capability in the IAM suite (ADR-0005 (governing architecture; see `RESOURCES.md`)).
 
 ## 2. Package composition
 
@@ -34,7 +34,7 @@ Identity has **no package dependency** on any other member, database vendor SDK 
 
 ## 4. Host responsibilities
 
-The host application:
+The host application in a fully operational suite (rather than Identity's refusal-only minimal host):
 
 - selects the latest accepted development `master` and records its resolution in the lockfile;
 - creates two PostgreSQL roles: a **migration role** that owns the `identity` schema, and a **runtime role** that owns nothing, is not a superuser and does not have `BYPASSRLS`;
@@ -48,7 +48,7 @@ The host application:
 - supplies `provideIdentityAccessDecision` (required), adapting Authorisation's decision for Identity's permissions. It must reject on failure, never allow;
 - supplies `provideIdentityApprovalPolicy` (required), adapting Authorisation's catalogue risk levels and the principals who hold a permission in a group. Every read is `strong`;
 - supplies `provideIdentityEventPublisher` (required), the publishing end of its outbox relay;
-- supplies `provideIdentitySubjectResolver` for the `/api/identity/*` endpoints, adapting Authentication's `getAuthenticatedPrincipal(event)`; without it every endpoint answers `unavailable`;
+- supplies `provideIdentitySubjectResolver` for the `/api/identity/*` endpoints, adapting Authentication's `getAuthenticatedPrincipal(event)`; when absent in `composeIdentity`, the anonymous default produces `unauthenticated` (401) for protected endpoints, while a resolver failure or malformed subject produces `unavailable` (503);
 - optionally supplies `provideIdentityClock`, the suite's one clock (iam-integration's architecture §7 (see `RESOURCES.md`)), the same one it gives every other member; a clock that can be moved only in tests;
 - sets `NUXT_IDENTITY_BASE_URL` to its public origin; without it every state-changing endpoint is refused;
 - for the default pages: imports Theme Manager's `presentation.css` and then `@nuxt-layers/identity/tailwind.css` into its Tailwind stylesheet, sets `identity.routes.signIn` to its sign-in page, and overrides `IdentityPersonName` with a component that asks Profile for names; or turns the pages off (`identity: { pages: { enabled: false } }`);
@@ -124,7 +124,8 @@ Identity follows ADR-0002 and the Data Store Security Standard v0.1 (governing a
 | Outbox event that does not match the contract | Never published; logged by sequence number (no payload) for an operator to inspect |
 | Runtime role that can bypass row-level security, or is the migration role | `migrateIdentityDatabase` refuses to run |
 | Clock that throws or answers no valid date | `unavailable` (503); the operation is refused, never timed by another clock |
-| No subject resolver, or it fails | Endpoints answer `unavailable` (503); none treats the caller as anyone |
+| No subject resolver supplied through `composeIdentity` | Protected endpoints use the anonymous default and answer `unauthenticated` (401); no authenticated identity is fabricated |
+| Subject resolver throws or returns malformed authenticated data | Protected endpoints answer `unavailable` (503); no unauthorised caller is accepted |
 | No base URL configured, or a foreign origin | State-changing endpoints answer `forbidden` (403) |
 
 ## 8. Composed-system verification

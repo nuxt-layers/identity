@@ -1,6 +1,6 @@
 # Plan
 
-> **In short:** finish Identity's ADR-0012 integration by keeping its public contract provider-neutral, defining common caller and decision requirements at the architectural level, and exposing its own scheduled operations without depending on the future `nuxt-layers/scheduler` capability.
+> **In short:** complete Identity's standalone public contract and acceptance evidence; preserve its existing security boundaries while independently migrated IAM capabilities establish compatible public interfaces. Scheduler and message transport remain executor/provider-neutral.
 
 ## Completed baseline
 
@@ -9,24 +9,26 @@
 | Complete | Move active package, module, documentation and dependency references to the version-agnostic `nuxt-layers` organisation (PR #36) |
 | Complete | Regenerate and merge the pnpm 12 lockfile against the current Theme Manager development dependency (PR #38) |
 | Complete | Introduce backward-compatible, fail-closed `composeIdentity` (PR #39) |
-| Complete | Add an independent `examples/minimal-host`, composition-budget check, CI build/smoke checks and capability-owned `getIdentityTasks()` descriptors (PR #40 merged; inspect its recorded CI results separately before claiming comprehensive downstream acceptance) |
+| Complete in source | Add `examples/minimal-host`, composition-budget check, CI build/smoke configuration and capability-owned `getIdentityTasks()` descriptors (PR #40); successful execution on current `master` remains to be verified |
+| Partially complete | PR #41 made the public consumer contract provider-neutral and corrected its section order; full operation-level signature and return/error completeness remains to be audited |
 
 ## Next work — in dependency order
 
 | Priority | Status | Work | Ownership and acceptance |
 |---|---|---|---|
-| 1 | In progress | Review accepted ADR-0012 shared caller, decision and scheduled-task shapes. Record required assurance (level, authentication recency, phishing resistance), tenant/resource context and fail-closed semantics. Assess scheduler concurrency, retries, timeouts, idempotency and distributed execution without assuming these are already normative. | `nuxt-layers/architecture-rules` owns any amendments; proposed changes require explicit architectural acceptance before adoption. Do not silently change shared shapes. |
-| 2 | Outstanding | Reconcile Identity's root `CONTRACT.md` with its public exports and code. Make it self-contained and provider-neutral: Identity documents only its capability, ports, returned values, errors, permissions, security requirements, presentation and tasks. Remove prescriptions about named consumers, IAM integration implementations and Scheduler. Keep necessary integration instructions and exact structural interfaces. | `nuxt-layers/identity`; docs-only first, with contract checks. Any code/contract behaviour discrepancy is separately tracked rather than hidden by documentation. |
-| 3 | Outstanding | Design the independent `nuxt-layers/scheduler` capability, following approved shared task shapes. Clarify task registration, triggering, distributed execution, concurrency, failure handling, retries, observability and persistence boundaries. Identity owns its job definitions and handlers; Scheduler does not own Identity business logic. | `nuxt-layers/scheduler` owns its design, `CONTRACT.md` and implementation. Identity MUST NOT import Scheduler or require its presence. |
-| 4 | Outstanding | Implement the common caller and decision provision through the suite integration boundary and adapt Identity without breaking or weakening privileged approvals, assurance checks, tenant isolation or reliable events. Use the accepted provider-neutral interfaces and keep composition within ADR-0012's budget. | Coordinated changes in `nuxt-layers/iam-integration`, Authorisation and other affected providers/consumers. Each repository owns its own code, contract and PR. |
-| 5 | Outstanding | Verify the integrated result on current `master`: frozen dependency resolutions, contract tests, fail-closed/security tests, CI minimal-host smoke, scheduler execution and affected downstream IAM consumers. | CI and consuming repositories; report results and remaining failures rather than implying success from provider CI alone. |
+| 1 | Blocked by CI infrastructure | Restore the `Quality` workflow. The 8 November 2026 `master` run 42514864342 ended in `startup_failure` before any job started; successful CodeQL does not prove typecheck, unit/database tests, build or minimal-host smoke. Establish a successful Quality result and diagnose the workflow startup restriction without weakening required security checks. | `nuxt-layers/identity` and the GitHub Actions organisation/repository configuration; no evidence yet that application tests themselves failed. |
+| 2 | In progress | Finish the root `CONTRACT.md` operation-level completeness review against actual public exports, including exact callable signatures, request/response types, errors and operational prerequisites. Preserve the independent consumer surface and avoid duplicating detailed internal implementation history. | `nuxt-layers/identity`; public contract and source are reconciled in a dedicated reviewed change. |
+| 3 | Waiting on IAM member migrations | Reconcile `capability.json` and structural caller/decision/approval ports with accepted capability contracts. The current manifest names Authentication and Authorisation as required operational integrations, whereas `composeIdentity` permits refusal-only boot without them. Decide how manifest requirements express operational vs boot-only capability requirements; do not silently flip required dependencies to optional or weaken authorisation. | Identity owns the manifest; Authentication and Authorisation own their contracts. Authorisation and Profile migrations precede suite integration. |
+| 4 | Deferred to owning capability | Define scheduled execution in `nuxt-layers/scheduler` and message delivery in `nuxt-layers/message-queue`; keep `getIdentityTasks()` and `IdentityEventPublisher` independent of both implementations. | Their separate capabilities own detailed semantics. Identity owns task handlers, events, transactional outbox and delivery acknowledgement expectations. |
+| 5 | Waiting on IAM member migrations | Adapt Identity to the accepted shared caller/decision composition boundary through suite integration, without weakening authentication recency, phishing resistance, tenant isolation, governance approvals or reliable outbox delivery. | `nuxt-layers/iam-integration` composes the suite after independent Authorisation and Profile migrations; code changes remain in owning repositories. |
+| 6 | Outstanding | Verify accepted current `master`: frozen dependency resolutions, complete Quality checks, minimal-host acceptance and affected downstream IAM consumers. Historical design/roadmap documents remain archival evidence, not parallel plans or current consumer contracts. | CI and affected consumers; record actual pass/fail results rather than inferring acceptance. |
 
 ## Architectural boundaries
 
 - **Identity owns:** identities, groups, memberships, governance, its persistence, events, permissions, scheduling requirements and task handlers.
 - **Identity consumes:** structural caller, access-decision, event-delivery and database ports. No named implementation is mandatory unless an accepted normative rule expressly makes it so.
-- **Scheduler owns:** the generic mechanism to register, trigger, coordinate and observe jobs; not Identity's business operations. The canonical repository name is `nuxt-layers/scheduler`.
+- **Scheduler and message transport:** independent infrastructure capabilities whose detailed execution and delivery contracts belong to their own repositories; Identity exposes task descriptors and a public event publisher port without importing them.
 - **Composition owns:** connecting supplied services to capabilities. No capability imports a particular consuming application, integration host or Scheduler.
-- **Architecture owns:** shared port and task shapes. Existing ADR-0012 is authoritative until changes are formally accepted.
+- **Architecture owns:** cross-cutting composition invariants and minimal structural shapes; operational details belong to capability-owned contracts. Accepted ADR-0012 remains authoritative.
 
 This plan records future work, not acceptance of an unamended shared contract or completion of cross-repository integration. Protected branches and separate, reviewed PRs remain mandatory.
