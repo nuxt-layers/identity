@@ -37,7 +37,7 @@ const PAGES: { key: keyof IdentityPagePaths, file: string, parameter?: string }[
 ]
 
 export default defineNuxtModule<IdentityModuleOptions>({
-  meta: { name: '@nuxt4-layers/identity/presentation', configKey: 'identity' },
+  meta: { name: '@nuxt-layers/identity/presentation', configKey: 'identity' },
   defaults: {
     presentation: true,
     pages: {
