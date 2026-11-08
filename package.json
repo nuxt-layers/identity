@@ -51,7 +51,7 @@
     "@nuxt-layers/theme-manager": "github:nuxt-layers/theme-manager#master",
     "@playwright/test": "^1.64.0",
     "@tailwindcss/vite": "^4.3.3",
-    "@types/node": "^24.13.6",
+    "@types/node": "^26.6.6",
     "@types/pg": "^8.23.1",
     "h3": "^1.15.11",
     "nuxt": "^4.5.2",
