@@ -49,19 +49,25 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+      # Organisation Actions policy permits GitHub-owned or nuxt-layers-owned actions only.
+      # Install Corepack locally on the disposable runner; no third-party action or global install.
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: 26
-          cache: pnpm
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm dev:prepare
-      - run: pnpm check
-      - run: pnpm build:playground
+      - name: Install Corepack for pnpm 12
+        shell: bash
+        run: |
+          npm install --prefix "$RUNNER_TEMP/corepack" --no-save --ignore-scripts corepack@0.36.0
+          echo "$RUNNER_TEMP/corepack/node_modules/.bin" >> "$GITHUB_PATH"
+      - run: corepack pnpm --version
+      - run: corepack pnpm install --frozen-lockfile
+      - run: corepack pnpm dev:prepare
+      - run: corepack pnpm check
+      - run: corepack pnpm build:playground
       - name: Enforce ADR-0012 host composition budget
         run: python3 scripts/check_minimal_host.py
       - name: Build standalone Identity minimal host
-        run: pnpm exec nuxt build examples/minimal-host
+        run: corepack pnpm exec nuxt build examples/minimal-host
       - name: Smoke test standalone Identity minimal host
         shell: bash
         run: |
@@ -83,8 +89,8 @@ jobs:
             exit 1
           fi
       # The default pages in a real browser, with axe WCAG 2.2 AA checks.
-      - run: pnpm exec playwright install --with-deps chromium
-      - run: pnpm exec playwright test
+      - run: corepack pnpm exec playwright install --with-deps chromium
+      - run: corepack pnpm exec playwright test
       - if: failure()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
