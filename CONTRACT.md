@@ -39,7 +39,17 @@ The layer's mandatory database schema defaults to `identity`. Pass `schema` only
 
 At deployment, a privileged **migration pool** applies `migrateIdentityDatabase({ pool: migrationPool, runtimeRole, schema? })`. The runtime role must not own tables, be a superuser or have `BYPASSRLS`. Migration credentials must not be available to ordinary request handling. The host provisions tenants and their initial root groups using this privileged pool only.
 
-At startup, from a server-only Nitro plugin, provide these ports (their public TypeScript types are exported by `@nuxt-layers/identity/contracts`):
+At startup, use the one-call `composeIdentity` server utility from a Nitro plugin. The following basic configuration is **refusal-only** until Authentication, Authorisation and reliable event delivery are connected:
+
+```ts
+export default defineNitroPlugin(() => {
+  composeIdentity({ database: { dialect: 'postgres', pool: runtimePool } })
+})
+```
+
+The host must construct `runtimePool` securely before this call. To enable authenticated administration, supply `accessDecision`, `approvalPolicy`, `subjectResolver` and `eventPublisher` in the same `composeIdentity({ database, accessDecision, approvalPolicy, subjectResolver, eventPublisher, policy?, clock? })` call. These are the **current** Identity-specific port shapes; the future ADR-0012 shared caller and decision shapes are not yet adapted. Without an access decision every privileged decision is denied; without an approval policy no approver qualifies; without a subject resolver HTTP requests are anonymous; without a publisher the outbox relay rejects without acknowledging delivery. Never use these refusal-only defaults as a working production IAM integration.
+
+For compatibility, the individual `provideIdentity*` server utilities remain available. Their current structural shapes (with public TypeScript types from `@nuxt-layers/identity/contracts`) are:
 
 | Function | Expected structural shape | Mandatory |
 |---|---|---|
