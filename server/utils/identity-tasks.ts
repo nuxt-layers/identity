@@ -1,3 +1,5 @@
+import { relayIdentityOutbox, runIdentityMaintenance } from './identity-server'
+
 /**
  * Capability-owned, scheduler-neutral task descriptors (ADR-0012).
  * The host schedules these functions; it does not reproduce Identity's
