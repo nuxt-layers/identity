@@ -1,10 +1,10 @@
 # Identity Contract (version 1)
 
-`@nuxt4-layers/identity/contracts` is the only supported import path for this capability's types, schemas and pure helpers. It imports nothing but `zod`: no driver, framework or other capability's package. `@nuxt4-layers/identity/conformance` exports the directory conformance suite, which imports only the contract.
+`@nuxt-layers/identity/contracts` is the only supported import path for this capability's types, schemas and pure helpers. It imports nothing but `zod`: no driver, framework or other capability's package. `@nuxt-layers/identity/conformance` exports the directory conformance suite, which imports only the contract.
 
 Identity answers one question: **which identity is this, and what is it a member of, in which state?**
 
-Governing documents: the [Group Model Definition v0.1](https://github.com/nuxt4-layers/platform-architecture/blob/93f3d6fb144b72d61cfb172b6a50eb6c5af9f489/docs/identity/group-model-definition-v01.md), [ADR-0005](https://github.com/nuxt4-layers/platform-architecture/blob/93f3d6fb144b72d61cfb172b6a50eb6c5af9f489/docs/decisions/ADR-0005-iam-suite.md), and iam-integration's [state models](https://github.com/nuxt4-layers/iam-integration/blob/d46b16580a711b840edb1eef5db51b2fe3d0421f/docs/states.md) and [processes](https://github.com/nuxt4-layers/iam-integration/blob/d46b16580a711b840edb1eef5db51b2fe3d0421f/docs/processes/README.md). The design round's decisions, including amendments to those documents, are recorded in [design-decisions.md](design-decisions.md).
+Governing documents: the Group Model Definition v0.1 (governing architecture; see `RESOURCES.md`), ADR-0005 (governing architecture; see `RESOURCES.md`), and iam-integration's state models (see `RESOURCES.md`) and processes (see `RESOURCES.md`). The design round's decisions, including amendments to those documents, are recorded in [design-decisions.md](design-decisions.md).
 
 ## 1. Boundaries
 
@@ -74,7 +74,7 @@ A tenant is an isolation boundary, not a group. It is a separate module (`shared
 | `state` | `active`, `closing` (the notice period: no new groups, memberships, invitations or join requests, enforced in the database) or `closed` (a tombstone) |
 | `closesAt` | For a `closing` tenant: when its notice period ends |
 
-Tenants are provisioned by the platform operator under iam-integration's [tenant lifecycle](https://github.com/nuxt4-layers/iam-integration/blob/ba7c3eb865fcd6a93b42ea5b7ba71cda680a1fd3/docs/processes/tenant-lifecycle.md), with `identity.tenants:manage` at `critical` risk, and shut down through it with `tenant.close` (§22).
+Tenants are provisioned by the platform operator under iam-integration's tenant lifecycle (see `RESOURCES.md`), with `identity.tenants:manage` at `critical` risk, and shut down through it with `tenant.close` (§22).
 
 Every identity has a **home tenant**: the inviting tenant for a sign-up through an invitation, otherwise the policy's `defaultHomeTenantId`, always resolved on the server. The person's personal group lives there, so its jurisdiction and data region govern what the person keeps for themselves. Identities themselves are global: membership of groups in other tenants needs no special kind.
 
@@ -175,7 +175,7 @@ Where a group's `joining.open` is on, anyone already in its tenant (their home t
 
 ## 8. Governance approvals
 
-Identity owns pending **governance** changes; Authorisation owns pending role and grant changes. Both follow iam-integration's [approvals process](https://github.com/nuxt4-layers/iam-integration/blob/d46b16580a711b840edb1eef5db51b2fe3d0421f/docs/processes/approvals.md).
+Identity owns pending **governance** changes; Authorisation owns pending role and grant changes. Both follow iam-integration's approvals process (see `RESOURCES.md`).
 
 **Changes Identity records** (`GOVERNANCE_CHANGES`): create a root group, reparent, archive, change settings, change approval requirements, change safety periods (§21), add, remove or suspend an owner, appoint an owner to an orphaned group, reinstate or reschedule a membership, suspend or reinstate an identity, create a service identity, and the end-of-life changes of §22: delete a group, close a tenant or cancel its closing, and place or release a legal hold. Each names the permission it exercises (§9) and whether it **confers** something on its beneficiary.
 
@@ -281,7 +281,7 @@ and, when a group context applies, the group's **departure data policy**. Normal
 
 ### 10.4 Provided: access governance (to Authorisation, through the host)
 
-Authorisation records its own pending role and grant changes and applies the same approval rules Identity applies to governance changes ([access administration](https://github.com/nuxt4-layers/iam-integration/blob/35e86ab288fed79848b513a98cfbd98304a3cb26/docs/processes/access-administration.md)). `getIdentityAccessGovernance()` gives it Identity's facts, in Identity's own vocabulary, every read `strong` and timed by the clock:
+Authorisation records its own pending role and grant changes and applies the same approval rules Identity applies to governance changes (access administration (see `RESOURCES.md`)). `getIdentityAccessGovernance()` gives it Identity's facts, in Identity's own vocabulary, every read `strong` and timed by the clock:
 
 - `describeGroup({ groupId, identityId, correlationId })` answers `governedGroupSchema`: the group's tenant, kind, state, parent (`null` for a root or personal group) and root (the first of its lineage, itself for a root or personal group); for a personal group, whose it is (`personalOfIdentityId`); its approval requirement and reference rule (§5.5; the defaults for a personal group); the safety periods in force for it (§21: `publishedDelayHighHours`, `publishedDelayCriticalHours`, `approvalExpiryDays`, `recoveryHoldHours`; the platform's for a personal group); and, for the identity named as requester, the end of their recovery hold if one is running now (§8) and the identities they control (service identities created by `service-identity.create` changes they requested, not closed), which never approve for them. An unknown group is `null`;
 - `isOwner({ identityId, groupId })`: whether Identity records the identity as an owner of the group in effect now (an active membership within its dates, of an active person), as the owner fallbacks of the approval route read it;
@@ -472,7 +472,7 @@ The layer registers default pages and `Identity*` components (`modules/presentat
 
 **Text.** Every word comes from `presentation/messages.ts` (en-GB) through `useIdentityText()`. Hosts change wording or add locales in `app.config.ts` under `identity.messages`, set the locale with `NUXT_PUBLIC_IDENTITY_LOCALE`, and point `identity.routes.signIn` (`NUXT_PUBLIC_IDENTITY_ROUTES_SIGN_IN`) at their sign-in page, to which the pages link with `?redirect=`. Conflicts and validation failures are explained from the error's `reason` (`identity.reason.*`), otherwise from its code.
 
-**Styling.** The pages style only through Theme Manager's SemanticPresentationTheme vocabulary (`identityClasses`), its public `presentation.css` and its size scales, never raw colours or Tailwind's default sizes; a host imports `@nuxt4-layers/identity/tailwind.css` after Theme Manager's stylesheet. Fill, Pen and Edge of one surface share role and state. The deliberate exceptions, which a host's theme must keep legible:
+**Styling.** The pages style only through Theme Manager's SemanticPresentationTheme vocabulary (`identityClasses`), its public `presentation.css` and its size scales, never raw colours or Tailwind's default sizes; a host imports `@nuxt-layers/identity/tailwind.css` after Theme Manager's stylesheet. Fill, Pen and Edge of one surface share role and state. The deliberate exceptions, which a host's theme must keep legible:
 
 - `pen-muted-default` on `fill-base-default`: hints, notes and definition terms on the card;
 - `edge-error-default` on `fill-input-default`: an invalid field's border;
@@ -482,7 +482,7 @@ The layer registers default pages and `Identity*` components (`modules/presentat
 
 ## 21. Safety periods
 
-The waits that protect people when nobody else can stop a change, following iam-integration's [safety periods](https://github.com/nuxt4-layers/iam-integration/blob/048210f65831f3eb17c0260ce340715cee49f168/docs/processes/README.md#safety-periods). The host's policy gives each a starting value (§15); while the platform runs, three levels may change them, each through a `group.change-safety-periods` change (`identity.group-approvals:manage`, always `critical`):
+The waits that protect people when nobody else can stop a change, following iam-integration's safety periods (see `RESOURCES.md`). The host's policy gives each a starting value (§15); while the platform runs, three levels may change them, each through a `group.change-safety-periods` change (`identity.group-approvals:manage`, always `critical`):
 
 | Level | Who | May set |
 |---|---|---|
@@ -500,7 +500,7 @@ The waits that protect people when nobody else can stop a change, following iam-
 
 ## 22. End of life
 
-Identity's part of iam-integration's [group deletion](https://github.com/nuxt4-layers/iam-integration/blob/ba7c3eb865fcd6a93b42ea5b7ba71cda680a1fd3/docs/processes/group-deletion.md), [tenant lifecycle](https://github.com/nuxt4-layers/iam-integration/blob/ba7c3eb865fcd6a93b42ea5b7ba71cda680a1fd3/docs/processes/tenant-lifecycle.md) and [retention](https://github.com/nuxt4-layers/iam-integration/blob/ba7c3eb865fcd6a93b42ea5b7ba71cda680a1fd3/docs/processes/retention.md) processes.
+Identity's part of iam-integration's group deletion (see `RESOURCES.md`), tenant lifecycle (see `RESOURCES.md`) and retention (see `RESOURCES.md`) processes.
 
 **Group deletion** (`group.delete`, `identity.groups:delete`, `critical`, decided in the group). Only an archived standard group that is not a root group nor the platform group, has no child group that is not deleted, and has been archived for at least the `critical` published delay in force (recorded with the change) can be deleted; every rule is checked again when it applies. Applying it sets the group `deleted`, withdraws its pending changes, invitations and join requests, ends its memberships (`group-deleted`), closes the service identities it owns, and writes `group.deleted` with `disposal: 'due'`, or `'deferred'` when a legal hold covers the group or its tenant. When disposal is due, Identity disposes of its own part at once (§5.1) and records its own confirmation. A person's personal group is deleted the same way when their identity closes.
 
@@ -518,7 +518,7 @@ Identity's part of iam-integration's [group deletion](https://github.com/nuxt4-l
 
 ## 23. Service identities
 
-Identity's part of iam-integration's [service identities](https://github.com/nuxt4-layers/iam-integration/blob/bbc683072a36aea812f12337d1722a5db41b836b/docs/processes/service-identities.md) process. A service identity is owned by one standard group, homed in its tenant, with a safe name (§5.4) not confusable with another live one of the group's, no personal group and no personal data. Its credentials are Authentication's.
+Identity's part of iam-integration's service identities (see `RESOURCES.md`) process. A service identity is owned by one standard group, homed in its tenant, with a safe name (§5.4) not confusable with another live one of the group's, no personal group and no personal data. Its credentials are Authentication's.
 
 **Changes** (all `high`, through the approvals engine, §8):
 
@@ -541,7 +541,7 @@ A platform operator's `identity.suspend` reaches a service identity too. Deletin
 
 ## 17. Versioning
 
-This is contract version 1, provided by package 1.0, and frozen for 1.x. From 1.0 the package follows [semantic versioning](https://semver.org/): a change that breaks the contract (a removed or narrowed type, function, endpoint, event or port, or a stricter rule a host must act on) needs a new contract version and a major release; an addition is a minor release; a fix is a patch. Each release is listed in `CHANGELOG.md`. Reserved for later versions: further `pausing` values (`notice`, `approval`), identity-provider group-claim mapping (improvement register item 18), and the tenancy module's extraction.
+This is contract version 1. During active development the package uses `0.0.0` metadata; formal release and compatibility guarantees are suspended under ADR-0008. A change that breaks the contract (a removed or narrowed type, function, endpoint, event or port, or a stricter rule a host must act on) needs a new contract version and a major release; an addition is a minor release; a fix is a patch. Each release is listed in `CHANGELOG.md`. Reserved for later versions: further `pausing` values (`notice`, `approval`), identity-provider group-claim mapping (improvement register item 18), and the tenancy module's extraction.
 
 Changes before 1.0:
 
