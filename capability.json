@@ -14,13 +14,13 @@
       "capability": "Authorisation",
       "contractVersion": "2",
       "optional": false,
-      "purpose": "decides every governance and membership change Identity does not reserve to the person, and says who qualifies to approve; the host adapts it to Identity's access-decision and approval-policy ports, so there is no package dependency"
+      "purpose": "required for operational IAM: the host supplies fail-closed permission decisions and independent approval qualification through Identity's ports; standalone startup denies"
     },
     {
       "capability": "Authentication",
       "contractVersion": "1",
       "optional": false,
-      "purpose": "the subject of every change is an AuthenticatedPrincipal whose principalId is the identity identifier; the host passes it in"
+      "purpose": "required for operational IAM: the host supplies a verified authenticated principal, preserving authentication recency and phishing resistance; standalone startup is anonymous"
     },
     {
       "capability": "SemanticPresentationTheme",
@@ -44,23 +44,32 @@
     },
     {
       "port": "IdentityAccessDecision",
-      "optional": false
+      "optional": false,
+      "purpose": "Required for authorised operations; a refusal-only provider is installed at standalone startup"
     },
     {
       "port": "IdentityApprovalPolicy",
-      "optional": false
+      "optional": false,
+      "purpose": "Required for governance approvals; a no-approval provider is installed at standalone startup"
     },
     {
       "port": "IdentityEventPublisher",
-      "optional": false
+      "optional": false,
+      "purpose": "Required for successful outbox relay; standalone startup installs a publisher that rejects delivery"
     },
     {
       "port": "IdentitySubjectResolver",
-      "optional": true
+      "optional": true,
+      "purpose": "Required for authenticated HTTP operations; standalone startup resolves every caller as anonymous"
     },
     {
       "port": "IdentityPolicy",
       "optional": true
+    },
+    {
+      "port": "IdentityClock",
+      "optional": true,
+      "purpose": "Defaults to a checked system clock"
     }
   ],
   "providesPorts": [
@@ -75,10 +84,25 @@
     {
       "port": "IdentityDisclosureContextPort",
       "consumer": "Profile"
+    },
+    {
+      "port": "IdentityAccessGovernance",
+      "consumer": "Authorisation (via the host's trusted server-side adapter)"
+    },
+    {
+      "port": "IdentityScimStructure",
+      "consumer": "A host-composed SCIM endpoint"
+    },
+    {
+      "port": "IdentityServiceIdentities",
+      "consumer": "Authentication and IAM Integration through trusted host adapters"
     }
   ],
   "integration": {
     "consumers": "consume the contract and the provided ports through host adapters; never read the identity schema",
-    "composition": "host supplies ports from a Nitro plugin; persistence follows ADR-0002; Identity holds no personal data (ADR-0005)"
+    "composition": "host supplies ports from a Nitro plugin; persistence follows ADR-0002; Identity holds no personal data (ADR-0005)",
+    "standalone": "A host may compose Identity with its PostgreSQL pool alone; missing caller, access, approval and event-delivery providers are refusal-only. This is not a functional IAM deployment.",
+    "operational": "Authentication and Authorisation remain required capabilities for full operational IAM composition; a verified caller, access decisions, approval qualification and successful event delivery must be provided before protected operations can function.",
+    "portSemantics": "Port optionality describes the composeIdentity startup parameter, not whether a working provider is required to perform the corresponding protected operation."
   }
 }
