@@ -16,7 +16,7 @@ changing server code.
    before it is merged.
 
 Commits to `master` must be signed. Sign yours with
-[SSH or GPG](https://docs.github.com/authentication/managing-commit-signature-verification),
+SSH or GPG,
 or a maintainer will squash-merge (GitHub signs the merge commit).
 
 ## Dependencies
