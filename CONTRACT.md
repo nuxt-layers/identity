@@ -65,9 +65,15 @@ Authenticated subjects have `{ principalId, authenticatedAt, assurance: { level:
 
 These are the **current implemented** ports, not ADR-0012's final simplified `resolveCaller` and `decide` wiring. Do not silently substitute those new shapes until Identity's implementation and its IAM consumers have been migrated.
 
+## Scheduled operations
+
+`getIdentityTasks()` is a public server utility returning scheduler-neutral descriptors of the ADR-0012 shape `{ name, every, run }`. The `every` value is a five-field cron expression: `identity:maintenance` runs every five minutes, and `identity:outbox` runs every minute. A host's central scheduler calls `run()`; Identity owns the implementation and its PostgreSQL outbox, not the host. Production outbox relaying requires a real `eventPublisher`; without one, delivery fails rather than marking messages as published. These tasks are **not** automatically scheduled on import.
+
+`examples/minimal-host` is a standalone Nuxt consumer that invokes `composeIdentity` once in its server plugin. Its default configuration demonstrates refusal-only operation and is not a full IAM application. CI builds the example, checks an unauthenticated health endpoint and measures host composition against the 50-line ADR-0012 budget. To use protected operations, the host must supply verified Authentication, Authorisation and event-delivery ports.
+
 ## Client and server functions
 
-Server composition functions are available through Nuxt/Nitro's public server utilities: `composeIdentity`, `provideIdentityDatabase`, `provideIdentityAccessDecision`, `provideIdentityApprovalPolicy`, `provideIdentityEventPublisher`, `provideIdentitySubjectResolver`, `provideIdentityClock`, `provideIdentityPolicy`. Their counterparts `useIdentity*` read the effective ports and refuse absent mandatory providers.
+Server composition functions are available through Nuxt/Nitro's public server utilities: `getIdentityTasks`, `composeIdentity`, `provideIdentityDatabase`, `provideIdentityAccessDecision`, `provideIdentityApprovalPolicy`, `provideIdentityEventPublisher`, `provideIdentitySubjectResolver`, `provideIdentityClock`, `provideIdentityPolicy`. Their counterparts `useIdentity*` read the effective ports and refuse absent mandatory providers.
 
 The supported server functions and entry points are:
 
