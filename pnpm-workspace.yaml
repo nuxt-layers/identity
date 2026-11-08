@@ -1,5 +1,7 @@
-onlyBuiltDependencies:
-  - "@nuxt-layers/theme-manager"
+# pnpm 12: explicitly approve only reviewed dependency install scripts.
+# The legacy onlyBuiltDependencies setting is ignored by pnpm 12.
+allowBuilds:
+  esbuild: true
 
 # Supply-chain hardening (docs/threat-model.md T12).
 # Resolve only versions published at least a day ago; most malicious releases
