@@ -4,6 +4,10 @@
 
 This is the `@nuxt-layers/identity` foundation capability in the Nuxt Layers IAM suite. It is developed in the version-agnostic `nuxt-layers` organisation; the current implementation uses Nuxt 4. Its contract is version 1, while formal release-based integration is suspended.
 
+## Development approach
+
+This repository is part of an experimental AI-driven software engineering initiative. AI contributes to architecture, implementation, security assessment, testing and documentation under human direction. The project owner retains authority over requirements, governance, acceptance and releases; all contributions follow the same review and quality standards.
+
 ## Responsibility
 
 Identity provides identity lifecycle and provisioning, one permanent personal group for each person, many independent memberships, a zero-or-one-parent group hierarchy, tenant boundaries, governance approvals, invitations, and service identities. Group hierarchy and membership never imply permission. Identity stores opaque identifiers and safe group/service names, not people's names, contact details, credentials or session information.
