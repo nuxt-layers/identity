@@ -1,5 +1,5 @@
 /**
- * Public contract for the `@nuxt4-layers/identity` capability, version 1.
+ * Public contract for the `@nuxt-layers/identity` capability, version 1.
  *
  * This module is the only supported cross-layer import path for the layer's
  * types, schemas and pure helpers. It imports nothing but zod: no Nuxt, Vue,

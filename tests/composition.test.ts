@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { DEFAULT_IDENTITY_POLICY, IdentityCompositionError } from '../contracts'
 import {
   clearIdentityComposition,
+  composeIdentity,
   provideIdentityAccessDecision,
   provideIdentityClock,
   provideIdentityApprovalPolicy,
@@ -38,6 +39,48 @@ const pool = { query: vi.fn(), connect: vi.fn(), end: vi.fn() }
 
 afterEach(() => {
   clearIdentityComposition()
+})
+
+
+describe('one-call Identity composition', () => {
+  it('provides a pool with refusal-only defaults', async () => {
+    composeIdentity({ database: { dialect: 'postgres', pool } })
+    expect(useIdentityDatabase().schema).toBe('identity')
+    await expect(useIdentityAccessDecision().decide({
+      subject: { principalId: '0192b330-6010-71fd-b119-b1968f3e3be6', authenticatedAt: '2026-11-08T12:00:00.000Z', assurance: { level: 'aal2', phishingResistant: true } },
+      permission: 'identity.groups:create', groupId: '0192b330-6010-71fd-b119-b1968f3e3be6', correlationId: '0192b330-6010-71fd-b119-b1968f3e3be6',
+    })).resolves.toEqual({ allowed: false, reason: 'not-permitted' })
+    await expect(useIdentityApprovalPolicy().riskOf('identity.groups:create')).resolves.toBeNull()
+    await expect(useIdentityApprovalPolicy().qualifies({ approverId: 'x', groupId: 'x', permission: 'identity.groups:create' })).resolves.toBe(false)
+    await expect(useIdentitySubjectResolver().resolve({})).resolves.toBeNull()
+    await expect(useIdentityEventPublisher().publish({} as never)).rejects.toMatchObject({ code: 'unavailable' })
+  })
+
+  it('accepts production-provided ports without overriding them', () => {
+    const access = { decide: vi.fn() }
+    const approvals = { riskOf: vi.fn(), qualifies: vi.fn(), countQualifying: vi.fn() }
+    const events = { publish: vi.fn() }
+    const caller = { resolve: vi.fn() }
+    composeIdentity({
+      database: { dialect: 'postgres', pool },
+      accessDecision: access,
+      approvalPolicy: approvals,
+      eventPublisher: events,
+      subjectResolver: caller,
+    })
+    expect(useIdentityAccessDecision()).toBe(access)
+    expect(useIdentityApprovalPolicy()).toBe(approvals)
+    expect(useIdentityEventPublisher()).toBe(events)
+    expect(useIdentitySubjectResolver()).toBe(caller)
+  })
+
+  it('rejects invalid ports before installing any of them', () => {
+    expect(() => composeIdentity({
+      database: { dialect: 'postgres', pool },
+      eventPublisher: {} as never,
+    })).toThrow(TypeError)
+    expect(() => useIdentityDatabase()).toThrow(IdentityCompositionError)
+  })
 })
 
 describe('Identity composition ports', () => {

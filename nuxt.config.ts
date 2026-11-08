@@ -1,8 +1,8 @@
 /**
  * Nuxt layer entry point for `@nuxt-layers/identity`.
  *
- * Hosts compose this layer by package name from `extends` and supply the
- * required ports from a Nitro plugin. See docs/composition-contract.md.
+ * Hosts compose this layer by package name from `extends` and call
+ * `composeIdentity` from a Nitro plugin. See CONTRACT.md.
  */
 import { fileURLToPath } from 'node:url'
 
