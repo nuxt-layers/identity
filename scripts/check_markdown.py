@@ -5,9 +5,10 @@ import re
 import sys
 
 root = Path(__file__).resolve().parents[1]
-# ADR-0010: only RESOURCES.md may link directly to external architecture files,\n# and those references must identify a verified immutable revision.
+# ADR-0010: only RESOURCES.md may link directly to external architecture files,
+# and those references must identify a verified immutable revision.
 architecture_link = re.compile(
-    r"^https?://github\\.com/nuxt-layers/architecture-rules/(?:blob|tree|raw)/([^/]+)(?:/|$)",
+    r"^https?://github\.com/nuxt-layers/architecture-rules/(?:blob|tree|raw)/([^/]+)(?:/|$)",
     re.IGNORECASE,
 )
 errors = []
