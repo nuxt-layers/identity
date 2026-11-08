@@ -21,7 +21,7 @@ def main() -> None:
         if '/api/' in relative or '/routes/' in relative:
             continue  # Host-owned routes and product code are excluded.
         contents = path.read_text(encoding='utf-8').splitlines()
-        if 'identity' in contents.__str__().lower() or path.name == 'nuxt.config.ts':
+        if 'identity' in '\n'.join(contents).lower() or 'identity' in relative.lower() or path.name == 'nuxt.config.ts':
             total += len(contents)
     if total > MAX_COMPOSITION_LINES:
         raise SystemExit(f'ADR-0012 host composition: {total} > {MAX_COMPOSITION_LINES} lines')
