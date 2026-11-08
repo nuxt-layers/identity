@@ -102,11 +102,82 @@ The supported server functions and entry points are:
 | `identityLegalHoldCovers({ kind, id })`, `recordIdentityDisposal({ subject, member, eventId, correlationId })`, `getIdentityDisposal({ kind, id })` | Retention and cross-capability disposal |
 | `exportIdentityTenantData({ subject, tenantId, correlationId })` | Closing tenant's governance export |
 
+### Callable service operations
+
+Each factory returns the listed asynchronous methods. Object parameters shown without types use the exported identifier, subject, correlation and policy types described above; method results are promises. Server callers must supply verified `IdentitySubject` values: do not construct or trust them from browser input. The permissions catalogue below governs protected operations, while the person's explicitly reserved self-actions require their own verified subject. Invalid input, insufficient assurance, denied decisions and provider failure fail closed under the error model below.
+
+| Factory | Methods and parameters | Results, in method order |
+|---|---|---|
+| `getIdentityProvisioning()` | `reserve(input: ProvisioningReserveInput)`; `confirm(input: ProvisioningConfirmInput)`; `signInStatus(identityId: string)` | `ProvisioningReservation`; `ProvisionedIdentity`; `SignInStatus | null` |
+| `getIdentityDirectory()` | `resolveActor(identityId: string, options: DirectoryReadOptions)`; `describeGroup(groupId: string, options: DirectoryReadOptions)` | `ActorContext | null`; `GroupDescription | null` |
+| `getIdentityAccessGovernance()` | `describeGroup({ groupId, identityId, correlationId })`; `isOwner({ identityId, groupId })`; `countOwners({ groupId, excluding })` | `GovernedGroup | null`; `boolean`; `number` |
+| `getIdentityDisclosureContext()` | `describe(request: DisclosureRequest, options: DirectoryReadOptions)` | `DisclosureContext` |
+| `getIdentityGovernance()` | `createGroup({ subject, parentGroupId, name, correlationId })`; `renameGroup({ subject, groupId, name, correlationId })`; `pauseMembership({ subject, membershipId, correlationId })`; `resumeMembership(…)`; `leaveGroup(…)`; `actOnMember({ subject, membershipId, action, reasonCode, correlationId })` | `{ groupId: string }`; remaining methods `void` |
+| `getIdentityApprovals()` | `request({ subject, request, correlationId })`; `decide({ subject, changeId, changeDigest, decision, correlationId })`; `cancel({ subject, changeId, correlationId })`; `getPendingChange({ subject, changeId })`; `object({ subject, changeId, correlationId })` | `PendingChange` each |
+| `getIdentityJoining()` | `invite({ subject, groupId, kind, inviteeIdentityId?, … })`; `accept({ subject, token, correlationId })`; `decline({ subject, token, correlationId })`; `revoke({ subject, invitationId, correlationId })`; `decideAcceptance({ subject, invitationId, decision, correlationId })`; `listInvitations({ subject, groupId, correlationId, limit? })`; `requestToJoin({ subject, groupId, correlationId })`; `withdrawJoinRequest({ subject, joinRequestId, correlationId })`; `decideJoinRequest({ subject, joinRequestId, decision, correlationId })`; `listJoinRequests({ subject, groupId, correlationId })` | Invitation and join-request contract records; `requestToJoin` returns `{ outcome: 'joined' | 'requested', joinRequestId: string | null }` |
+| `getIdentityLifecycle()` | `lastOwnerOf({ subject })`; `pauseIdentity({ subject, correlationId })`; `resumeIdentity({ subject, correlationId })`; `requestClosure({ subject, leaveGroupsOrphaned?, correlationId })`; `cancelClosure({ subject, correlationId })` | `string[]`; `{ state: 'paused', orphanedGroupIds: string[] }`; `{ state: 'active' }`; `{ state: 'closure-pending', closesAt: string }`; `{ state: string }` |
+| `getIdentityBreakGlass()` | `act({ subject, action, targetId, reasonCode, correlationId })`; `closeReview({ subject, reviewId, outcome, closerHeldPasskey, correlationId })` | `BreakGlassReview` each |
+| `getIdentityQueries()` | `self({ subject })`; `group({ subject, groupId, correlationId })`; `members({ subject, groupId, after?, correlationId })`; `changes({ subject, groupId, correlationId })` | `SelfView | null`; `GroupView`; `GroupMembersPage`; `PendingChange[]` |
+| `getIdentityScimStructure()` | `user({ identityId, tenantId })`; `group({ groupId })` | Structural SCIM user/group records or `null` |
+| `getIdentityServiceIdentities()` | `list({ subject, groupId, correlationId })`; `get({ subject, identityId, correlationId })`; `rename({ subject, identityId, name, correlationId })`; `leave({ subject, identityId, groupId, correlationId })`; `mayManageCredentials({ subject, identityId, correlationId })`; `describe({ identityId, correlationId })` | `ServiceIdentityList`; `ServiceIdentity` (get/rename/leave); `boolean`; `ServiceIdentityAudience | null` |
+
+For `getIdentityDirectory()`, `DirectoryReadOptions` is `{ consistency: 'strong' | 'bounded' }`; a strong read is required for authorisation and sign-in decisions. Directory reads return `null` for unknown records and reject on source failure. `getIdentityAccessGovernance()` always reads strongly and does not itself authorise disclosure; only expose it through a trusted server-side adapter. The disclosure port batches up to `DISCLOSURE_MAX_SUBJECTS` identities and must not be exposed directly to an untrusted client.
+
+All `getIdentityApprovals()` methods use the current `PendingChange` contract; `decide` requires the change digest the approver inspected, and an independent qualifying approver for relevant risks. The service identity audience and credential-governance methods are trusted integration ports, not public HTTP permissions. Operator-only functions use a privileged migration connection and must not be exposed as user-callable endpoints.
+
+### Typed client
+
+`useIdentity()` is a Nuxt auto-imported composable. It returns these methods (the function's HTTP calls are the client boundary, never a substitute for server authorisation):
+
+`me()`, `pauseIdentity()`, `resumeIdentity()`, `requestClosure(leaveGroupsOrphaned = false)`, `cancelClosure()`, `group(groupId: string)`, `createGroup(parentGroupId: string, name: string)`, `renameGroup(groupId: string, name: string)`, `members(groupId: string, after?: string)`, `changes(groupId: string)`, `pauseMembership(membershipId: string)`, `resumeMembership(membershipId: string)`, `leaveGroup(membershipId: string)`, `suspendMember(membershipId: string, reasonCode: string)`, `removeMember(membershipId: string, reasonCode: string)`, `invitations(groupId: string)`, `acceptInvitation(token: string)`, `declineInvitation(token: string)`, `revokeInvitation(invitationId: string)`, `decideAcceptance(invitationId: string, decision: 'confirm' | 'refuse')`, `joinGroup(groupId: string)`, `joinRequests(groupId: string)`, `withdrawJoinRequest(joinRequestId: string)`, `decideJoinRequest(joinRequestId: string, decision: 'approve' | 'refuse')`, `requestChange(change: object)`, `change(changeId: string)`, `decideChange(change: Pick<PendingChange, 'changeId' | 'changeDigest'>, decision: 'approve' | 'reject')`, `cancelChange(changeId: string)`, `objectToChange(changeId: string)`, `serviceIdentities(groupId: string)`, `serviceIdentity(identityId: string)`, `renameServiceIdentity(identityId: string, name: string)`, `serviceIdentityLeave(identityId: string, groupId: string)`, `breakGlass(action: BreakGlassAction, targetId: string, reasonCode: string)`.
+
+Their inputs and results follow the corresponding server operations and the HTTP response contracts; HTTP mutation success bodies can differ from direct server function returns. All client calls may reject with the documented HTTP error body.
+
+### HTTP routes
+
+Identity's public HTTP API is rooted at `/api/identity`. It supports `GET /me`; `POST /me/pause`, `/me/resume`, `/me/closure`; `DELETE /me/closure`; group create, read, rename, member, change, invitation, join-request and service-identity routes; membership pause, resume, leave, remove and suspend; invitation accept, decline, revoke and confirmation; join-request withdrawal and decision; governance change request/read/decision/cancel/objection; and break-glass actions. The client method names above map to those endpoints. For mutation requests the host must configure the public origin and provide a verified subject resolver; origin, validation, access and assurance checks remain server-side.
+
+### Directory conformance
+
+Import `identityDirectoryConformance` and `ConformanceSubject` from `@nuxt-layers/identity/conformance`. Pass `{ directory, fixture, boundedStalenessSeconds }`, where `fixture` implements `seed`, `endMembership`, `breakSource`, `restore` and `advanceSeconds`. Execute each returned `{ name, run }` check with the host's test runner. The suite verifies strong/bounded consistency, fail-closed reads, revocation, identity state and absence of personal data.
+
 The factory methods above return typed services with operation-specific inputs and outputs under `./contracts`. Each operation validates against those schemas and returns a typed result or an `IdentityError`, never an unchecked provider response. The layer's `/api/identity/*` HTTP surface delegates to these functions, with the identity principal resolved server-side. It includes `/me` lifecycle, group CRUD and members, memberships, invitations and join requests, governance `/changes`, break-glass actions and service identities. `useIdentity()` exposes matching typed client operations; it is not an authorisation boundary.
 
 Errors are `unauthenticated` (401), `forbidden` (403), `insufficient-assurance` (403), `validation-failed` (400), `conflict` (409), `rate-limited` (429) and `unavailable` (503). HTTP error bodies contain `{ code, messageKey, reason? }`, with `reason` only for eligible validation/conflict responses. A missing required port raises `IdentityCompositionError`; outages and invalid clocks are refused, never replaced by an implicit allow.
 
 ## Permissions
+
+The exported `IDENTITY_PERMISSIONS` catalogue (risk and effect are part of the public contract):
+
+| Permission | Risk | Effect |
+|---|---|---|
+| `identity.groups:view` | low | view |
+| `identity.groups:create` | medium | change |
+| `identity.root-groups:create` | high | change |
+| `identity.groups:rename` | medium | change |
+| `identity.groups:reparent` | critical | change |
+| `identity.groups:archive` | high | change |
+| `identity.groups:delete` | critical | change |
+| `identity.group-settings:manage` | high | change |
+| `identity.group-approvals:manage` | critical | change |
+| `identity.group-owners:manage` | critical | change |
+| `identity.memberships:view` | low | view |
+| `identity.invitations:manage` | medium | change |
+| `identity.join-requests:decide` | medium | change |
+| `identity.memberships:remove` | medium | change |
+| `identity.memberships:suspend` | medium | change |
+| `identity.memberships:schedule` | medium | change |
+| `identity.service-identities:create` | high | change |
+| `identity.service-identities:manage` | high | change |
+| `identity.service-identities:admit` | high | change |
+| `identity.identities:suspend` | high | change |
+| `identity.orphaned-groups:recover` | critical | change |
+| `identity.tenants:view` | low | view |
+| `identity.tenants:manage` | critical | change |
+| `identity.tenants:close` | critical | change |
+| `identity.tenants:export` | high | change |
+| `identity.legal-holds:manage` | critical | change |
+| `identity.break-glass-reviews:close` | high | change |
 
 Identity's permission catalogue is `IDENTITY_PERMISSIONS` in `./contracts`, including group creation, view and rename; membership viewing and changes; invitation handling and joining; approval of governance operations; service identity management; tenant export; break-glass and legal-hold governance. The catalogue's `risk` and `effect` fields are authoritative for any supplied decision and approval provider. Sensitive actions require the declared assurance and, where applicable, independent approval and safety periods. Membership alone never grants unrestricted permissions. Failed decisions are denied, without leaking whether another identity or group exists.
 
