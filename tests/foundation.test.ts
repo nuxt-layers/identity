@@ -36,8 +36,15 @@ describe('Identity repository foundation', () => {
     expect(required).toEqual(['IdentityDatabase', 'IdentityAccessDecision', 'IdentityApprovalPolicy', 'IdentityEventPublisher'])
   })
 
-  it('declares the ports it provides to Authentication, Authorisation and Profile', () => {
-    expect(manifest.providesPorts.map((p: { port: string }) => p.port)).toEqual(['IdentityProvisioning', 'IdentityDirectory', 'IdentityDisclosureContextPort'])
+  it('declares all public integration ports', () => {
+    expect(manifest.providesPorts.map((p: { port: string }) => p.port)).toEqual([
+      'IdentityProvisioning',
+      'IdentityDirectory',
+      'IdentityDisclosureContextPort',
+      'IdentityAccessGovernance',
+      'IdentityScimStructure',
+      'IdentityServiceIdentities',
+    ])
   })
 
   it('depends on zod alone at runtime', () => {
